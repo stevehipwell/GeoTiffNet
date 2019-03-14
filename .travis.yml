@@ -1,0 +1,12 @@
+language: csharp
+dotnet: 2.2
+
+env:
+  - FrameworkPathOverride=/usr/lib/mono/4.5/
+
+jobs:
+  include:
+    - stage: test
+      mono: none
+      script:
+        - dotnet build -c Release
