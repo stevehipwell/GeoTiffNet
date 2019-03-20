@@ -1,1 +1,1 @@
-# GeoTiff.NET
+# GeoTiffNet
