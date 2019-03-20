@@ -13,7 +13,6 @@ namespace GeoTiffNet
     private readonly IEndianHandler ByteHandler;
     private readonly Stream Stream;
     private readonly long Offset;
-    private IList<ITiffField> FieldCol;
 
     public TiffImage(IEndianHandler byteHandler, Stream stream, long offset, bool isGeoTiff)
     {
@@ -24,9 +23,11 @@ namespace GeoTiffNet
       this.Load(isGeoTiff);
     }
 
-    public IList<ITiffField> Fields => this.FieldCol;
+    public IList<ITiffField> Fields { get; private set; }
 
     public IList<IGeoKey> GeoKeys { get; private set; }
+
+    public int Version { get; private set; }
 
     public long NextImageOffset { get; private set; }
 
@@ -52,7 +53,7 @@ namespace GeoTiffNet
 
     private void LoadFields(BinaryReader reader, int count)
     {
-      this.FieldCol = new List<ITiffField>();
+      this.Fields = new List<ITiffField>();
 
       for (int i = 0; i < count; i++)
       {
@@ -60,7 +61,7 @@ namespace GeoTiffNet
 
         if (Enum.IsDefined(typeof(TiffTagTypeEnum), field.Type))
         {
-          this.FieldCol.Add(field);
+          this.Fields.Add(field);
         }
       }
     }
@@ -78,8 +79,8 @@ namespace GeoTiffNet
         var doubleValues = doublesField != null ? doublesField.GetDoubleValues() : new double[0];
         var ascii = asciiField != null ? asciiField.GetBytes() : new byte[0];
 
-        var version = new Version(geoKeyValues[0], geoKeyValues[1], geoKeyValues[2]);
-        if (version.Major != 1)
+        this.Version = geoKeyValues[0];
+        if (this.Version != 1)
         {
           throw new Exception("Invalid GeoTiff, the directory bytes are badly formatted.");
         }
@@ -93,3 +94,4 @@ namespace GeoTiffNet
     }
   }
 }
+

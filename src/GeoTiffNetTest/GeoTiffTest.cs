@@ -11,7 +11,7 @@ namespace GeoTiffNetTest
     [Fact]
     public void GeoTiffsCanBeLoaded()
     {
-      using (var tiff = new GeoTiff(@"C:\Data\OS\OpenMap\TM\data\TM47SE.tif"))
+      using (var tiff = new GeoTiff(@"/home/steve/downloads/cea.tif"))
       {
         var index = 0;
         foreach (var image in tiff.GetImages())
@@ -22,7 +22,7 @@ namespace GeoTiffNetTest
           Console.WriteLine("  Fields:");
           foreach (var field in image.Fields)
           {
-            Console.WriteLine("    {0}: {1}", field.Tag, field.ValueOffset);
+            Console.WriteLine("    {0} ({1}): {2}", field.Tag, field.Type, field.ValueOffset);
           }
 
           Console.WriteLine("  GeoKeys:");
