@@ -10,4 +10,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <Copyright>Copyright (C) 2019 Steve Hipwell</Copyright>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.5.2" />
+  </ItemGroup>
 </Project>
