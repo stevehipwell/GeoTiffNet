@@ -72,7 +72,7 @@ namespace GeoTiffNet
       this.Stream.Position = 0;
       using (var reader = new BinaryReader(this.Stream, Encoding.UTF8, true))
       {
-        this.ByteOrder = (TiffByteOrderEnum)BinaryPrimitives.ReadInt16LittleEndian(reader.ReadBytes(2));
+        this.ByteOrder = (TiffByteOrderEnum)reader.ReadUInt16();
         this.ByteHandler = new ByteHandler(this.ByteOrder == TiffByteOrderEnum.BigEndian);
         this.VersionNumber = this.ByteHandler.ReadUInt16(reader.ReadBytes(2));
         this.FirstImageOffset = this.ByteHandler.ReadUInt32(reader.ReadBytes(4));
