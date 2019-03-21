@@ -74,7 +74,7 @@ namespace GeoTiffNet
       var asciiField = this.Fields.FirstOrDefault(field => field.Tag == TiffTagEnum.GeoAsciiParams);
       if (geoKeyField != null)
       {
-        var geoKeyValues = geoKeyField.GetUInt16Values().AsSpan();
+        var geoKeyValues = geoKeyField.GetShortValues().AsSpan();
         var doubleValues = doublesField != null ? doublesField.GetDoubleValues() : new double[0];
         var ascii = asciiField != null ? asciiField.Bytes : new byte[0];
 

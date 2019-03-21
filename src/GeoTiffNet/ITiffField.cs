@@ -12,7 +12,25 @@ namespace GeoTiffNet
 
     byte[] Bytes { get; }
 
-    ushort[] GetUInt16Values();
+    string GetAsciiValue();
+
+    ushort[] GetShortValues();
+
+    uint[] GetLongValues();
+
+    Tuple<uint, uint>[] GetRationalValues();
+
+    sbyte[] GetSByteValues();
+
+    byte[] GetUndefinedValues();
+
+    short[] GetSShortValues();
+
+    int[] GetSLongValues();
+
+    Tuple<int, int>[] GetSRationalValues();
+
+    float[] GetFloatValues();
 
     double[] GetDoubleValues();
   }

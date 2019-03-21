@@ -33,35 +33,170 @@ namespace GeoTiffNet
 
     public byte[] Bytes { get; private set; }
 
-    public ushort[] GetUInt16Values()
+    public string GetAsciiValue()
+    {
+      if (this.Type != TiffTagTypeEnum.Ascii)
+      {
+        throw new Exception("This tag does not contain Ascii data.");
+      }
+
+      return Encoding.ASCII.GetString(this.Bytes, 0, this.Bytes.Length - 1);
+    }
+
+    public ushort[] GetShortValues()
     {
       if (this.Type != TiffTagTypeEnum.Short)
       {
-        throw new Exception("This tag does not contain UInt16 data.");
+        throw new Exception("This tag does not contain Short data.");
       }
 
       var values = new ushort[this.Count];
+      var bytes = this.Bytes.AsSpan();
 
       for (int i = 0; i < this.Count; i++)
       {
-        values[i] = this.ByteHandler.ReadUInt16(this.Bytes.AsSpan().Slice(i * this.BytesPerValue, this.BytesPerValue));
+        values[i] = this.ByteHandler.ReadUInt16(bytes, i * this.BytesPerValue);
       }
 
       return values;
     }
 
-    public uint[] GetUInt32Values()
+    public uint[] GetLongValues()
     {
       if (this.Type != TiffTagTypeEnum.Long)
       {
-        throw new Exception("This tag does not contain UInt32 data.");
+        throw new Exception("This tag does not contain Long data.");
       }
 
       var values = new uint[this.Count];
+      var bytes = this.Bytes.AsSpan();
 
       for (int i = 0; i < this.Count; i++)
       {
-        values[i] = this.ByteHandler.ReadUInt32(this.Bytes.AsSpan().Slice(i * this.BytesPerValue, this.BytesPerValue));
+        values[i] = this.ByteHandler.ReadUInt32(bytes, i * this.BytesPerValue);
+      }
+
+      return values;
+    }
+
+    public Tuple<uint, uint>[] GetRationalValues()
+    {
+      if (this.Type != TiffTagTypeEnum.Rational)
+      {
+        throw new Exception("This tag does not contain Rational data.");
+      }
+
+      var values = new Tuple<uint, uint>[this.Count];
+      var bytes = this.Bytes.AsSpan();
+
+      for (int i = 0; i < this.Count; i++)
+      {
+        var offset = i * this.BytesPerValue;
+        var step = this.BytesPerValue / 2;
+
+        values[i] = Tuple.Create(this.ByteHandler.ReadUInt32(bytes, offset), this.ByteHandler.ReadUInt32(bytes, offset + step));
+      }
+
+      return values;
+    }
+
+    public sbyte[] GetSByteValues()
+    {
+      if (this.Type != TiffTagTypeEnum.SByte)
+      {
+        throw new Exception("This tag does not contain SByte data.");
+      }
+
+      var values = new sbyte[this.Count];
+
+      for (int i = 0; i < this.Count; i++)
+      {
+        values[i] = (sbyte)this.Bytes[i];
+      }
+
+      return values;
+    }
+
+    public byte[] GetUndefinedValues()
+    {
+      if (this.Type != TiffTagTypeEnum.Undefined)
+      {
+        throw new Exception("This tag does not contain Undefined data.");
+      }
+
+      return this.Bytes;
+    }
+
+    public short[] GetSShortValues()
+    {
+      if (this.Type != TiffTagTypeEnum.SShort)
+      {
+        throw new Exception("This tag does not contain SShort data.");
+      }
+
+      var values = new short[this.Count];
+      var bytes = this.Bytes.AsSpan();
+
+      for (int i = 0; i < this.Count; i++)
+      {
+        values[i] = this.ByteHandler.ReadInt16(bytes, i * this.BytesPerValue);
+      }
+
+      return values;
+    }
+
+    public int[] GetSLongValues()
+    {
+      if (this.Type != TiffTagTypeEnum.SLong)
+      {
+        throw new Exception("This tag does not contain SLong data.");
+      }
+
+      var values = new int[this.Count];
+      var bytes = this.Bytes.AsSpan();
+
+      for (int i = 0; i < this.Count; i++)
+      {
+        values[i] = this.ByteHandler.ReadInt32(bytes, i * this.BytesPerValue);
+      }
+
+      return values;
+    }
+
+    public Tuple<int, int>[] GetSRationalValues()
+    {
+      if (this.Type != TiffTagTypeEnum.SRational)
+      {
+        throw new Exception("This tag does not contain SRational data.");
+      }
+
+      var values = new Tuple<int, int>[this.Count];
+      var bytes = this.Bytes.AsSpan();
+
+      for (int i = 0; i < this.Count; i++)
+      {
+        var offset = i * this.BytesPerValue;
+        var step = this.BytesPerValue / 2;
+
+        values[i] = Tuple.Create(this.ByteHandler.ReadInt32(bytes, offset), this.ByteHandler.ReadInt32(bytes, offset + step));
+      }
+
+      return values;
+    }
+
+    public float[] GetFloatValues()
+    {
+      if (this.Type != TiffTagTypeEnum.Float)
+      {
+        throw new Exception("This tag does not contain Float data.");
+      }
+
+      var values = new float[this.Count];
+      var bytes = this.Bytes.AsSpan();
+
+      for (int i = 0; i < this.Count; i++)
+      {
+        values[i] = this.ByteHandler.ReadSingle(bytes, i * this.BytesPerValue);
       }
 
       return values;
@@ -75,23 +210,14 @@ namespace GeoTiffNet
       }
 
       var values = new double[this.Count];
+      var bytes = this.Bytes.AsSpan();
 
       for (int i = 0; i < this.Count; i++)
       {
-        values[i] = this.ByteHandler.ReadDouble(this.Bytes.AsSpan().Slice(i * this.BytesPerValue, this.BytesPerValue));
+        values[i] = this.ByteHandler.ReadDouble(bytes, i * this.BytesPerValue);
       }
 
       return values;
-    }
-
-    public string GetStringValue()
-    {
-      if (this.Type != TiffTagTypeEnum.Ascii)
-      {
-        throw new Exception("This tag does not contain String data.");
-      }
-
-      return Encoding.ASCII.GetString(this.Bytes, 0, this.Bytes.Length - 1);
     }
 
     public override string ToString()
@@ -126,12 +252,18 @@ namespace GeoTiffNet
       {
         case TiffTagTypeEnum.Byte:
         case TiffTagTypeEnum.Ascii:
+        case TiffTagTypeEnum.SByte:
+        case TiffTagTypeEnum.Undefined:
           return 1;
         case TiffTagTypeEnum.Short:
+        case TiffTagTypeEnum.SShort:
           return 2;
         case TiffTagTypeEnum.Long:
+        case TiffTagTypeEnum.SLong:
+        case TiffTagTypeEnum.Float:
           return 4;
         case TiffTagTypeEnum.Rational:
+        case TiffTagTypeEnum.SRational:
         case TiffTagTypeEnum.Double:
           return 8;
         default:
@@ -144,13 +276,27 @@ namespace GeoTiffNet
       switch (this.Type)
       {
         case TiffTagTypeEnum.Byte:
-          return string.Join(", ", this.Bytes.Select(x => (char)x));
+          return string.Join(", ", this.Bytes);
         case TiffTagTypeEnum.Ascii:
-          return this.GetStringValue();
+          return this.GetAsciiValue();
         case TiffTagTypeEnum.Short:
-          return string.Join(", ", this.GetUInt16Values());
+          return string.Join(", ", this.GetShortValues());
         case TiffTagTypeEnum.Long:
-          return string.Join(", ", this.GetUInt32Values());
+          return string.Join(", ", this.GetLongValues());
+        case TiffTagTypeEnum.Rational:
+          return string.Join<Tuple<uint, uint>>(", ", this.GetRationalValues());
+        case TiffTagTypeEnum.SByte:
+          return string.Join(", ", this.GetSByteValues());
+        case TiffTagTypeEnum.Undefined:
+          return string.Join(", ", this.GetUndefinedValues());
+        case TiffTagTypeEnum.SShort:
+          return string.Join(", ", this.GetSShortValues());
+        case TiffTagTypeEnum.SLong:
+          return string.Join(", ", this.GetSLongValues());
+        case TiffTagTypeEnum.SRational:
+          return string.Join<Tuple<int, int>>(", ", this.GetSRationalValues());
+        case TiffTagTypeEnum.Float:
+          return string.Join(", ", this.GetFloatValues());
         case TiffTagTypeEnum.Double:
           return string.Join(", ", this.GetDoubleValues());
         default:
