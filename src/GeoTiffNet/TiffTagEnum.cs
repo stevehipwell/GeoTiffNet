@@ -19,9 +19,9 @@ namespace GeoTiffNet
     ResolutionUnit = 296,
     ColorMap = 320,
     SampleFormat = 339,
-    ModelPixelScaleTag = 33550,
-    ModelTiepointTag = 33922,
-    ModelTransformationTag = 34264,
+    ModelPixelScale = 33550,
+    ModelTiepoint = 33922,
+    ModelTransformation = 34264,
     GeoKeyDirectory = 34735,
     GeoDoubleParams = 34736,
     GeoAsciiParams = 34737

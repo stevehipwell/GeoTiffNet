@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using GeoAPI.Geometries;
+using ProjNet.CoordinateSystems.Transformations;
 
 namespace GeoTiffNet
 {
@@ -89,6 +91,56 @@ namespace GeoTiffNet
           this.GeoKeys.Add(new GeoKey(geoKeyValues.Slice(GeoKey.FieldCount + (i * GeoKey.FieldCount), GeoKey.FieldCount), doubleValues, ascii));
         }
       }
+    }
+
+    private Envelope GetBounds()
+    {
+      var transformation = this.GetTransformation();
+      if (transformation != null)
+      {
+        return new Envelope(transformation.Transform(new Coordinate(0, 0)), transformation.Transform(this.GetImageDimensions()));
+      }
+
+      var tiePoints = this.GetTiePoints();
+      var pixelScaling = this.GetPixelScaling();
+      if (tiePoints.count == 1 && pixelScaling != null)
+      {
+
+      }
+
+      throw new Exception("Could not calculate GeoTiff bounds.");
+    }
+
+    private Coordinate GetImageDimensions()
+    {
+      var widthField = this.Fields.First(f => f.Tag == TiffTagEnum.ImageWidth);
+      var heightField = this.Fields.First(f => f.Tag == TiffTagEnum.ImageLength);
+      return new Coordinate(widthField.Type == TiffTagTypeEnum.Long ? widthField.GetLongValues().First() : widthField.GetShortValues().First(), heightField.Type == TiffTagTypeEnum.Long ? heightField.GetLongValues().First() : heightField.GetShortValues().First());
+    }
+
+    private AffineTransform GetTransformation()
+    {
+      var transformationKey = this.Fields.FirstOrDefault(f => f.Tag == TiffTagEnum.ModelTransformation);
+      if (transformationKey == null)
+      {
+        return null;
+      }
+
+      var transformValues = transformationKey.GetDoubleValues();
+      var matrix = new double[,] { { transformValues[0], transformValues[1], transformValues[2], transformValues[3] }, { transformValues[4], transformValues[5], transformValues[6], transformValues[7] }, { transformValues[8], transformValues[9], transformValues[10], transformValues[11] }, { transformValues[12], transformValues[13], transformValues[14], transformValues[15] } };
+      return new AffineTransform(matrix);
+    }
+
+    private Envelope GetBoundsFromScaling()
+    {
+
+    }
+
+    private Envelope GetBoundsFromTransformation(double[] transformValues, Coordinate imageDimensions)
+    {
+      var matrix = new double[,] { { transformValues[0], transformValues[1], transformValues[2], transformValues[3] }, { transformValues[4], transformValues[5], transformValues[6], transformValues[7] }, { transformValues[8], transformValues[9], transformValues[10], transformValues[11] }, { transformValues[12], transformValues[13], transformValues[14], transformValues[15] } };
+      var transformation = new AffineTransform(matrix);
+
     }
   }
 }
