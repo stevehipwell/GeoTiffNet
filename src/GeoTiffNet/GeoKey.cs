@@ -8,9 +8,11 @@ namespace GeoTiffNet
 {
   public class GeoKey : IGeoKey
   {
-    public GeoKey(IEndianHandler byteHandler, Stream stream, ReadOnlySpan<ushort> values, IList<double> doubles, ReadOnlySpan<byte> ascii)
+    public const int FieldCount = 4;
+
+    public GeoKey(ReadOnlySpan<ushort> values, IList<double> doubles, ReadOnlySpan<byte> ascii)
     {
-      this.Load(byteHandler, stream, values, doubles, ascii);
+      this.Load(values, doubles, ascii);
     }
 
     public GeoKeyEnum Tag { get; private set; }
@@ -21,7 +23,7 @@ namespace GeoTiffNet
 
     public string StringValue { get; private set; }
 
-    private void Load(IEndianHandler byteHandler, Stream stream, ReadOnlySpan<ushort> values, IList<double> doubles, ReadOnlySpan<byte> ascii)
+    private void Load(ReadOnlySpan<ushort> values, IList<double> doubles, ReadOnlySpan<byte> ascii)
     {
       this.Tag = (GeoKeyEnum)values[0];
 
@@ -41,6 +43,11 @@ namespace GeoTiffNet
           this.Int32Value = valueOffset;
           break;
       }
+    }
+
+    public override string ToString()
+    {
+      return string.Format("{0}: {1}", this.Tag, this.StringValue as object ?? this.DoubleValue ?? this.Int32Value);
     }
   }
 }

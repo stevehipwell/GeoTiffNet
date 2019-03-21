@@ -22,13 +22,13 @@ namespace GeoTiffNetTest
           Console.WriteLine("  Fields:");
           foreach (var field in image.Fields)
           {
-            Console.WriteLine("    {0} ({1}): {2}", field.Tag, field.Type, field.ValueOffset);
+            Console.WriteLine("    {0}", field);
           }
 
           Console.WriteLine("  GeoKeys:");
           foreach (var key in image.GeoKeys)
           {
-            Console.WriteLine("    {0}: {1}", key.Tag, key.StringValue as object ?? key.Int32Value ?? key.DoubleValue);
+            Console.WriteLine("    {0}", key);
           }
 
           Console.WriteLine("----------------------------------------------------");

@@ -33,7 +33,7 @@ namespace GeoTiffNet
 
     public TiffByteOrderEnum ByteOrder { get; private set; }
 
-    public IEndianHandler ByteHandler { get; private set; }
+    public IByteHandler ByteHandler { get; private set; }
 
     public ushort VersionNumber { get; private set; }
 
@@ -42,7 +42,7 @@ namespace GeoTiffNet
     private void Load(ReadOnlySpan<byte> bytes)
     {
       this.ByteOrder = (TiffByteOrderEnum)BinaryPrimitives.ReadInt16LittleEndian(bytes.Slice(0, 2));
-      this.ByteHandler = new EndianHandler(this.ByteOrder == TiffByteOrderEnum.BigEndian);
+      this.ByteHandler = new ByteHandler(this.ByteOrder == TiffByteOrderEnum.BigEndian);
       this.VersionNumber = this.ByteHandler.ReadUInt16(bytes.Slice(2, 2));
       this.FirstImageOffset = this.ByteHandler.ReadUInt32(bytes.Slice(4, 4));
     }

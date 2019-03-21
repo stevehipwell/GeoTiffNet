@@ -8,15 +8,15 @@ namespace GeoTiffNet
 {
   public class TiffField : ITiffField
   {
-    private readonly IEndianHandler ByteHandler;
-    private readonly Stream Stream;
+    public const int DirectoryByteCount = 12;
 
-    public TiffField(IEndianHandler byteHandler, Stream stream, ReadOnlySpan<byte> bytes)
+    private readonly IByteHandler ByteHandler;
+
+    public TiffField(IByteHandler byteHandler, ReadOnlySpan<byte> bytes, Stream stream)
     {
       this.ByteHandler = byteHandler;
-      this.Stream = stream;
 
-      this.Load(bytes);
+      this.Load(bytes, stream);
     }
 
     public TiffTagEnum Tag { get; private set; }
@@ -27,119 +27,100 @@ namespace GeoTiffNet
 
     public uint ValueOffset { get; private set; }
 
-    public ushort GetUInt16Value()
-    {
-      if (this.Type != TiffTagTypeEnum.Short)
-      {
-        throw new Exception("This tag does not contain ushort data.");
-      }
+    public int BytesPerValue { get; private set; }
 
-      if (!this.IsOffset())
-      {
-        return BitConverter.ToUInt16(BitConverter.GetBytes(this.ValueOffset), 0);
-      }
+    public bool IsOffSet => this.BytesPerValue * this.Count > 4;
 
-      this.Stream.Position = this.ValueOffset;
-      using (var reader = new BinaryReader(this.Stream, Encoding.UTF8, true))
-      {
-        return this.ByteHandler.ReadUInt16(reader.ReadBytes(this.GetByteCount()));
-      }
-    }
+    public byte[] Bytes { get; private set; }
 
     public ushort[] GetUInt16Values()
     {
       if (this.Type != TiffTagTypeEnum.Short)
       {
-        throw new Exception("This tag does not contain ushort data.");
+        throw new Exception("This tag does not contain UInt16 data.");
       }
 
-      var byteCount = this.GetByteCount();
+      var values = new ushort[this.Count];
 
-      if (!this.IsOffset())
+      for (int i = 0; i < this.Count; i++)
       {
-        var values = new ushort[this.Count];
-        var bytes = BitConverter.GetBytes(this.ValueOffset);
-
-        for (int i = 0; i < this.Count; i++)
-        {
-          values[i] = BitConverter.ToUInt16(bytes, i * byteCount);
-        }
-
-        return values;
+        values[i] = this.ByteHandler.ReadUInt16(this.Bytes.AsSpan().Slice(i * this.BytesPerValue, this.BytesPerValue));
       }
 
-      this.Stream.Position = this.ValueOffset;
-      using (var reader = new BinaryReader(this.Stream, Encoding.UTF8, true))
-      {
-        var values = new ushort[this.Count];
-
-        for (int i = 0; i < this.Count; i++)
-        {
-          values[i] = this.ByteHandler.ReadUInt16(reader.ReadBytes(byteCount));
-        }
-
-        return values;
-      }
+      return values;
     }
 
-    public double GetDoubleValue()
+    public uint[] GetUInt32Values()
     {
-      if (this.Type != TiffTagTypeEnum.Double)
+      if (this.Type != TiffTagTypeEnum.Long)
       {
-        throw new Exception("This tag does not contain double data.");
+        throw new Exception("This tag does not contain UInt32 data.");
       }
 
-      this.Stream.Position = this.ValueOffset;
-      using (var reader = new BinaryReader(this.Stream, Encoding.UTF8, true))
+      var values = new uint[this.Count];
+
+      for (int i = 0; i < this.Count; i++)
       {
-        return reader.ReadDouble();
+        values[i] = this.ByteHandler.ReadUInt32(this.Bytes.AsSpan().Slice(i * this.BytesPerValue, this.BytesPerValue));
       }
+
+      return values;
     }
 
     public double[] GetDoubleValues()
     {
       if (this.Type != TiffTagTypeEnum.Double)
       {
-        throw new Exception("This tag does not contain double data.");
+        throw new Exception("This tag does not contain Double data.");
       }
 
-      this.Stream.Position = this.ValueOffset;
-      using (var reader = new BinaryReader(this.Stream, Encoding.UTF8, true))
+      var values = new double[this.Count];
+
+      for (int i = 0; i < this.Count; i++)
       {
-        var values = new double[this.Count];
-
-        for (int i = 0; i < this.Count; i++)
-        {
-          values[i] = reader.ReadDouble();
-        }
-
-        return values;
+        values[i] = this.ByteHandler.ReadDouble(this.Bytes.AsSpan().Slice(i * this.BytesPerValue, this.BytesPerValue));
       }
+
+      return values;
     }
 
-    public ReadOnlySpan<byte> GetBytes()
+    public string GetStringValue()
     {
-      if (!this.IsOffset())
+      if (this.Type != TiffTagTypeEnum.Ascii)
       {
-        return this.ByteHandler.ToByteArray(this.ValueOffset);
+        throw new Exception("This tag does not contain String data.");
       }
 
-      this.Stream.Position = this.ValueOffset;
-      using (var reader = new BinaryReader(this.Stream, Encoding.UTF8, true))
-      {
-        return reader.ReadBytes(this.GetByteCount() * this.Count);
-      }
+      return Encoding.ASCII.GetString(this.Bytes, 0, this.Bytes.Length - 1);
     }
 
-    private void Load(ReadOnlySpan<byte> bytes)
+    public override string ToString()
+    {
+      return string.Format("{0} ({1}): {2}", this.Tag, this.Type, this.GetValueAsString());
+    }
+
+    private void Load(ReadOnlySpan<byte> bytes, Stream stream)
     {
       this.Tag = (TiffTagEnum)this.ByteHandler.ReadUInt16(bytes.Slice(0, 2));
       this.Type = (TiffTagTypeEnum)this.ByteHandler.ReadUInt16(bytes.Slice(2, 2));
       this.Count = (int)this.ByteHandler.ReadUInt32(bytes.Slice(4, 4));
       this.ValueOffset = this.ByteHandler.ReadUInt32(bytes.Slice(8, 4));
+      this.BytesPerValue = this.GetBytesPerValue();
+
+      if (!this.IsOffSet)
+      {
+        this.Bytes = bytes.Slice(8, 4).ToArray();
+        return;
+      }
+
+      stream.Position = this.ValueOffset;
+      using (var reader = new BinaryReader(stream, Encoding.UTF8, true))
+      {
+        this.Bytes = reader.ReadBytes(this.BytesPerValue * this.Count);
+      }
     }
 
-    private int GetByteCount()
+    private int GetBytesPerValue()
     {
       switch (this.Type)
       {
@@ -154,13 +135,28 @@ namespace GeoTiffNet
         case TiffTagTypeEnum.Double:
           return 8;
         default:
-          throw new Exception("Unknown tiff tag type.");
+          return 0;
       }
     }
 
-    private bool IsOffset()
+    private string GetValueAsString()
     {
-      return this.GetByteCount() * this.Count > 4;
+      switch (this.Type)
+      {
+        case TiffTagTypeEnum.Byte:
+          return string.Join(", ", this.Bytes.Select(x => (char)x));
+        case TiffTagTypeEnum.Ascii:
+          return this.GetStringValue();
+        case TiffTagTypeEnum.Short:
+          return string.Join(", ", this.GetUInt16Values());
+        case TiffTagTypeEnum.Long:
+          return string.Join(", ", this.GetUInt32Values());
+        case TiffTagTypeEnum.Double:
+          return string.Join(", ", this.GetDoubleValues());
+        default:
+          return "Unknown";
+      }
     }
   }
 }
+

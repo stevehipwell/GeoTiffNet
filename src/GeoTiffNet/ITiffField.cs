@@ -10,16 +10,10 @@ namespace GeoTiffNet
 
     int Count { get; }
 
-    uint ValueOffset { get; }
-
-    ushort GetUInt16Value();
+    byte[] Bytes { get; }
 
     ushort[] GetUInt16Values();
 
-    double GetDoubleValue();
-
     double[] GetDoubleValues();
-
-    ReadOnlySpan<byte> GetBytes();
   }
 }

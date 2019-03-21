@@ -22,7 +22,7 @@ namespace GeoTiffNetTest
 
           foreach (var field in image.Fields)
           {
-            Console.WriteLine("    {0} ({1}): {2}", field.Tag, field.Type, field.ValueOffset);
+            Console.WriteLine("    {0}", field);
           }
 
           Console.WriteLine("----------------------------------------------------");

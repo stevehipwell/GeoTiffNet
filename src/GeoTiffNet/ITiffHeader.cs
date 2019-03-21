@@ -5,9 +5,10 @@ namespace GeoTiffNet
   public interface ITiffHeader
   {
     bool IsGeoTiff { get; }
+
     TiffByteOrderEnum ByteOrder { get; }
 
-    IEndianHandler ByteHandler { get; }
+    IByteHandler ByteHandler { get; }
 
     ushort VersionNumber { get; }
 

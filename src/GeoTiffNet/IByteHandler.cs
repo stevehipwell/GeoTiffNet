@@ -6,12 +6,12 @@ using System.Buffers.Binary;
 
 namespace GeoTiffNet
 {
-  public interface IEndianHandler
+  public interface IByteHandler
   {
     ushort ReadUInt16(ReadOnlySpan<byte> bytes);
 
     uint ReadUInt32(ReadOnlySpan<byte> bytes);
 
-    ReadOnlySpan<byte> ToByteArray(uint value);
+    double ReadDouble(ReadOnlySpan<byte> bytes);
   }
 }

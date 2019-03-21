@@ -8,42 +8,41 @@ namespace GeoTiffNet
 {
   public class TiffImage : ITiffImage, IGeoTiffImage
   {
-    private const int FieldBytes = 12;
-
-    private readonly IEndianHandler ByteHandler;
+    private readonly IByteHandler ByteHandler;
     private readonly Stream Stream;
-    private readonly long Offset;
 
-    public TiffImage(IEndianHandler byteHandler, Stream stream, long offset, bool isGeoTiff)
+    public TiffImage(IByteHandler byteHandler, Stream stream, long offset, bool isGeoTiff)
     {
       this.ByteHandler = byteHandler;
       this.Stream = stream;
-      this.Offset = offset;
 
-      this.Load(isGeoTiff);
+      this.Load(offset, isGeoTiff);
     }
 
     public IList<ITiffField> Fields { get; private set; }
 
     public IList<IGeoKey> GeoKeys { get; private set; }
 
-    public int Version { get; private set; }
-
     public long NextImageOffset { get; private set; }
 
-    private void Load(bool isGeoTiff)
+    private void Load(long offset, bool isGeoTiff)
     {
-      int count;
-
-      this.Stream.Position = this.Offset;
+      List<byte[]> byteCol;
+      this.Stream.Position = offset;
       using (var reader = new BinaryReader(this.Stream, Encoding.UTF8, true))
       {
-        count = this.ByteHandler.ReadUInt16(reader.ReadBytes(2));
+        var count = this.ByteHandler.ReadUInt16(reader.ReadBytes(2));
+        byteCol = new List<byte[]>(count);
 
-        this.LoadFields(reader, count);
+        for (int i = 0; i < count; i++)
+        {
+          byteCol.Add(reader.ReadBytes(TiffField.DirectoryByteCount));
+        }
 
         this.NextImageOffset = this.ByteHandler.ReadUInt32(reader.ReadBytes(4));
       }
+
+      this.LoadFields(byteCol);
 
       if (isGeoTiff)
       {
@@ -51,13 +50,13 @@ namespace GeoTiffNet
       }
     }
 
-    private void LoadFields(BinaryReader reader, int count)
+    private void LoadFields(List<byte[]> byteCol)
     {
       this.Fields = new List<ITiffField>();
 
-      for (int i = 0; i < count; i++)
+      foreach (var bytes in byteCol)
       {
-        var field = new TiffField(this.ByteHandler, this.Stream, reader.ReadBytes(FieldBytes));
+        var field = new TiffField(this.ByteHandler, bytes, this.Stream);
 
         if (Enum.IsDefined(typeof(TiffTagTypeEnum), field.Type))
         {
@@ -75,12 +74,11 @@ namespace GeoTiffNet
       var asciiField = this.Fields.FirstOrDefault(field => field.Tag == TiffTagEnum.GeoAsciiParams);
       if (geoKeyField != null)
       {
-        var geoKeyValues = geoKeyField.GetUInt16Values();
+        var geoKeyValues = geoKeyField.GetUInt16Values().AsSpan();
         var doubleValues = doublesField != null ? doublesField.GetDoubleValues() : new double[0];
-        var ascii = asciiField != null ? asciiField.GetBytes() : new byte[0];
+        var ascii = asciiField != null ? asciiField.Bytes : new byte[0];
 
-        this.Version = geoKeyValues[0];
-        if (this.Version != 1)
+        if (geoKeyValues[0] != 1)
         {
           throw new Exception("Invalid GeoTiff, the directory bytes are badly formatted.");
         }
@@ -88,7 +86,7 @@ namespace GeoTiffNet
         var keyCount = geoKeyValues[3];
         for (int i = 0; i < keyCount; i++)
         {
-          this.GeoKeys.Add(new GeoKey(this.ByteHandler, this.Stream, new ReadOnlySpan<ushort>(geoKeyValues).Slice(4 + (i * 4), 4), doubleValues, ascii));
+          this.GeoKeys.Add(new GeoKey(geoKeyValues.Slice(GeoKey.FieldCount + (i * GeoKey.FieldCount), GeoKey.FieldCount), doubleValues, ascii));
         }
       }
     }

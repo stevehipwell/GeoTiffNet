@@ -6,11 +6,11 @@ using System.Buffers.Binary;
 
 namespace GeoTiffNet
 {
-  public class EndianHandler : IEndianHandler
+  public class ByteHandler : IByteHandler
   {
     private readonly bool IsBigEndian;
 
-    public EndianHandler(bool isBigEndian)
+    public ByteHandler(bool isBigEndian)
     {
       this.IsBigEndian = isBigEndian;
     }
@@ -25,20 +25,9 @@ namespace GeoTiffNet
       return this.IsBigEndian ? BinaryPrimitives.ReadUInt32BigEndian(bytes) : BinaryPrimitives.ReadUInt32LittleEndian(bytes);
     }
 
-    public ReadOnlySpan<byte> ToByteArray(uint value)
+    public double ReadDouble(ReadOnlySpan<byte> bytes)
     {
-      var bytes = new byte[4];
-
-      if (this.IsBigEndian)
-      {
-        BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
-      }
-      else
-      {
-        BinaryPrimitives.WriteUInt32LittleEndian(bytes, value);
-      }
-
-      return bytes;
+      return BitConverter.Int64BitsToDouble(this.IsBigEndian ? BinaryPrimitives.ReadInt64BigEndian(bytes) : BinaryPrimitives.ReadInt64LittleEndian(bytes));
     }
   }
 }
